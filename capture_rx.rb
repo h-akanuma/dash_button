@@ -9,29 +9,10 @@ end
 
 def get_capture(iface)
   subject = Rx::BehaviorSubject.new('')
-  source = subject.as_observable.select {|pkt| dash_packet?(pkt) }
+  source = subject.select {|pkt| dash_packet?(pkt) }
 
   source.subscribe(
-    lambda do |pkt|
-      time = Time.now.strftime("%Y-%m-%d %H:%M:%S.%6N")
-
-      if UDPPacket.can_parse?(pkt)
-        packet = UDPPacket.parse(pkt)
-        src_ip = IPHeader.octet_array(packet.ip_src).join('.')
-        dst_ip = IPHeader.octet_array(packet.ip_dst).join('.')
-        protocol = 'udp'
-      elsif ARPPacket.can_parse?(pkt)
-        packet = ARPPacket.parse(pkt)
-        src_ip = packet.arp_saddr_ip
-        dst_ip = packet.arp_daddr_ip
-        protocol = 'arp'
-      else
-        next
-      end
-
-      src_mac, dst_mac, vendor_name = get_common_values(packet)
-      output(time, src_mac, dst_mac, src_ip, dst_ip, protocol, vendor_name)
-    end,
+    lambda {|pkt| capture(pkt) },
     lambda {|err| puts "Error: #{err}" },
     lambda { puts 'Completed.' }
   )
@@ -47,8 +28,29 @@ def dash_packet?(pkt)
   get_vendor_name(EthHeader.str2mac(EthPacket.parse(pkt).eth_src)).downcase.include?('amazon')
 end
 
+def capture(pkt)
+  time = Time.now.strftime("%Y-%m-%d %H:%M:%S.%6N")
+
+  if UDPPacket.can_parse?(pkt)
+    packet = UDPPacket.parse(pkt)
+    src_ip = IPHeader.octet_array(packet.ip_src).join('.')
+    dst_ip = IPHeader.octet_array(packet.ip_dst).join('.')
+    protocol = 'udp'
+  elsif ARPPacket.can_parse?(pkt)
+    packet = ARPPacket.parse(pkt)
+    src_ip = packet.arp_saddr_ip
+    dst_ip = packet.arp_daddr_ip
+    protocol = 'arp'
+  else
+    return
+  end
+
+  src_mac, dst_mac, vendor_name = get_common_values(packet)
+  output(time, src_mac, dst_mac, src_ip, dst_ip, protocol, vendor_name)
+end
+
 def output(time, src_mac, dst_mac, src_ip, dst_ip, protocol, vendor_name)
-  puts "time:#{time}, src_mac:#{src_mac}, dst_mac:#{dst_mac}, src_io:#{src_ip}, dst_ip:#{dst_ip}, protocol:#{protocol}, vendor:#{vendor_name}"
+  puts "time:#{time}, src_mac:#{src_mac}, dst_mac:#{dst_mac}, src_ip:#{src_ip}, dst_ip:#{dst_ip}, protocol:#{protocol}, vendor:#{vendor_name}"
 end
 
 def get_common_values(packet)

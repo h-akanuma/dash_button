@@ -15,15 +15,10 @@ end
 
 def get_capture(iface)
   subject = Rx::BehaviorSubject.new('')
-  source = subject.as_observable.select {|pkt| target_dash_pushed?(pkt) }.debounce(INTERVAL_SECONDS)
+  source = subject.select {|pkt| target_dash_pushed?(pkt) }.debounce(INTERVAL_SECONDS)
 
   source.subscribe(
-    lambda do |pkt|
-      post_to_slack
-
-      t_stamp = Time.now.strftime("%Y-%m-%d %H:%M:%S.%6N")
-      puts "#{t_stamp} Posted to Slack."
-    end,
+    lambda {|pkt| post_to_slack },
     lambda {|err| puts "Error: #{err}" },
     lambda { puts 'Completed.' }
   )
@@ -53,6 +48,9 @@ def post_to_slack
   puts output
   puts std_error
   puts status
+
+  t_stamp = Time.now.strftime("%Y-%m-%d %H:%M:%S.%6N")
+  puts "#{t_stamp} Posted to Slack."
 end
 
 if $0 == __FILE__
