@@ -9,9 +9,7 @@ end
 
 def get_capture(iface)
   subject = Rx::BehaviorSubject.new('')
-  source = subject.select {|pkt| dash_packet?(pkt) }
-
-  source.subscribe(
+  subject.select {|pkt| dash_packet?(pkt) }.subscribe(
     lambda {|pkt| capture(pkt) },
     lambda {|err| puts "Error: #{err}" },
     lambda { puts 'Completed.' }

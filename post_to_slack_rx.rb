@@ -15,9 +15,7 @@ end
 
 def get_capture(iface)
   subject = Rx::BehaviorSubject.new('')
-  source = subject.select {|pkt| target_dash_pushed?(pkt) }.debounce(INTERVAL_SECONDS)
-
-  source.subscribe(
+  subject.select {|pkt| target_dash_pushed?(pkt) }.debounce(INTERVAL_SECONDS).subscribe(
     lambda {|pkt| post_to_slack },
     lambda {|err| puts "Error: #{err}" },
     lambda { puts 'Completed.' }
