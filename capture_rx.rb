@@ -8,7 +8,7 @@ class Rx::BehaviorSubject
 end
 
 def get_capture(iface)
-  subject = Rx::BehaviorSubject.new('')
+  subject = Rx::Subject.new
   subject.select {|pkt| dash_packet?(pkt) }.subscribe(
     lambda {|pkt| capture(pkt) },
     lambda {|err| puts "Error: #{err}" },
